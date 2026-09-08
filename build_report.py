@@ -112,6 +112,16 @@ html = r"""<!DOCTYPE html>
   .bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;position:relative;min-height:3px}
   .bar small{position:absolute;top:-18px;left:0;right:0;text-align:center;color:var(--muted);font-size:11px}
   .bar fig{font-size:9px;color:var(--muted);text-align:center;margin-top:6px}
+  .filterbar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin:0 0 16px}
+  .fgroup{display:flex;flex-direction:column;gap:4px}
+  .fgroup label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .filterbar select{padding:7px 10px;border:1px solid var(--hair);border-radius:6px;background:var(--card);
+    color:var(--ink);font-size:13px;font-family:var(--font);cursor:pointer}
+  .filterbar select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .filterbar .countnote{margin-left:auto;align-self:flex-end;font-size:12px;color:var(--muted);padding-bottom:4px}
+  .clear{background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:underline;
+    font-family:var(--font);padding:0;align-self:flex-end;margin-bottom:4px}
+  .clear:hover{color:var(--ink)}
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
   th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--hair);vertical-align:top;font-size:13.5px}
   th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--accent-soft);font-weight:600}
@@ -146,6 +156,16 @@ html = r"""<!DOCTYPE html>
   <div class="rule"></div>
   <section>
     <h2>Answer-by-answer · right &amp; wrong</h2>
+    <div class="filterbar">
+      <div class="fgroup"><label>Result</label>
+        <select id="f-result"><option value="">All</option><option>wrong</option><option>correct</option></select></div>
+      <div class="fgroup"><label>Actual</label>
+        <select id="f-actual"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      <div class="fgroup"><label>Predicted</label>
+        <select id="f-pred"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      <div class="countnote" id="count"></div>
+      <button class="clear" id="clearf">clear filters</button>
+    </div>
     <table>
       <thead><tr><th>#</th><th>Review</th><th>Predicted</th><th>Actual</th><th>Result</th><th>Model's reason</th></tr></thead>
       <tbody id="rows"></tbody>
@@ -167,7 +187,27 @@ const DATA = __DATA__;
   ["Reviewed",s.n,"reviews scored from title + text"]];
 let h="";for(const[t,v,d]of cards)h+=`<div class="card"><b>${v}</b><span>${t} — ${d}</span></div>`;document.getElementById('cards').innerHTML=h;})();
 (function(){const d=DATA.distribution;const max=Math.max(...d.map(x=>x.count),1);let h="";for(const x of d)h+=`<div class="bar" style="height:${(x.count/max)*100}%" title="${x.count} review(s)"><small>${x.count}</small><fig>${x.star}★</fig></div>`;document.getElementById('bars').innerHTML=h;})();
-(function(){const r=DATA.rows;let h="";r.forEach((x,i)=>{if(x.pred==null)return;const ok=x.correct;const badge=ok?`<span class="pill ok">correct</span>`:`<span class="pill bad">wrong</span>`;const title=(x.title||"").split(" ").slice(0,6).join(" ");h+=`<tr><td class="num">${i+1}</td><td class="review">${esc(x.text.slice(0,70))}${x.text.length>70?"…":""}<br><small>${esc(title)}</small></td><td class="num stars">${x.pred}★</td><td class="num">${x.true}★</td><td>${badge}</td><td class="reason">${esc(x.reason)}</td></tr>`;});document.getElementById('rows').innerHTML=h;})();
+(function(){const r=DATA.rows;const rowsEl=document.getElementById('rows');
+function rowHtml(x,i){const ok=x.correct;const badge=ok?`<span class="pill ok">correct</span>`:`<span class="pill bad">wrong</span>`;const title=(x.title||"").split(" ").slice(0,6).join(" ");return `<tr><td class="num">${i+1}</td><td class="review">${esc(x.text.slice(0,70))}${x.text.length>70?"…":""}<br><small>${esc(title)}</small></td><td class="num stars">${x.pred}★</td><td class="num">${x.true}★</td><td>${badge}</td><td class="reason">${esc(x.reason)}</td></tr>`;}
+function render(){
+  const fRes=document.getElementById('f-result').value;
+  const fAct=document.getElementById('f-actual').value;
+  const fPred=document.getElementById('f-pred').value;
+  let shown=0,html="";
+  r.forEach((x,i)=>{if(x.pred==null)return;
+    if(fRes && (fRes==='correct')!==x.correct)return;
+    if(fAct && String(x.true)!==fAct)return;
+    if(fPred && String(x.pred)!==fPred)return;
+    shown++;html+=rowHtml(x,i);});
+  rowsEl.innerHTML=html;
+  document.getElementById('count').textContent=shown===r.filter(x=>x.pred!=null).length
+    ? `showing all ${shown}`
+    : `showing ${shown} of ${r.filter(x=>x.pred!=null).length}`;
+}
+render();
+['f-result','f-actual','f-pred'].forEach(id=>document.getElementById(id).addEventListener('change',render));
+document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-actual','f-pred'].forEach(id=>document.getElementById(id).value='');render();});
+})();
 (function(){const c=DATA.classes;if(!c||!c.length){document.getElementById('classes').innerHTML='<p style="color:var(--muted)">No wrong answers to classify.</p>';return;}let h="";for(const x of c){h+=`<div class="cls"><h3>${esc(x.name)}<span class="tag">${x.count}× · ${esc(x.pred_vs_true)}</span></h3><div class="meta">e.g. ${esc(x.example)}…</div><p>${esc(x.inference)}</p></div>`;}document.getElementById('classes').innerHTML=h;})();
 function esc(s){return(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 </script>
