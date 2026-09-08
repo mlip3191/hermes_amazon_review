@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review Scoring Report</title>
+<style>
+  /* THEME — edit these variables to restyle the whole page */
+  :root{
+    --bg:#f1efea;            /* page background */
+    --card:#faf9f6;          /* card / table surface */
+    --ink:#2e2c28;           /* primary text */
+    --muted:#8a867d;         /* secondary text */
+    --hair:#dcd8cf;          /* borders */
+    --accent:#6b6f50;        /* dull olive accent */
+    --accent-soft:#e4e3d6;   /* accent tint */
+    --good:#7b8570;          /* correct */
+    --good-soft:#e6e9e2;
+    --bad:#a97a6b;           /* incorrect (muted terracotta) */
+    --bad-soft:#f0e4e0;
+    --shadow:0 1px 2px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.04);
+    --radius:10px;
+    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:var(--font);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 22px 80px;}
+  header{padding:8px 0 4px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:30px;font-weight:650;margin:6px 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:14px;margin:0}
+  .rule{height:1px;background:var(--hair);margin:26px 0}
+
+  section{margin:34px 0}
+  h2{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+     margin:0 0 14px;font-weight:600}
+  h2 span{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .card{background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);
+        box-shadow:var(--shadow);padding:16px 18px}
+  .card b{font-size:28px;font-weight:650;display:block;line-height:1.1}
+  .card b small{font-size:15px;font-weight:500;color:var(--muted)}
+  .card span{font-size:12px;color:var(--muted)}
+
+  .bars{display:flex;gap:6px;align-items:flex-end;height:120px;margin-top:6px}
+  .bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;position:relative;
+       min-height:3px;transition:background .15s}
+  .bar small{position:absolute;top:-18px;left:0;right:0;text-align:center;color:var(--muted);font-size:11px}
+  .bar fig{font-size:9px;color:var(--muted);text-align:center;margin-top:6px}
+
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--hair);
+        border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--hair);vertical-align:top;
+        font-size:13.5px}
+  th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+     background:var(--accent-soft);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#f6f4ef}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:600;
+        letter-spacing:.03em}
+  .pill.ok{background:var(--good-soft);color:var(--good)}
+  .pill.bad{background:var(--bad-soft);color:var(--bad)}
+  .stars{color:var(--accent);letter-spacing:.05em;font-weight:600}
+  .review{color:var(--ink);max-width:340px}
+  .review small{color:var(--muted)}
+  .reason{color:var(--muted);font-size:12.5px;max-width:260px}
+
+  .cls{background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);
+       padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .cls h3{margin:0 0 2px;font-size:15px;font-weight:650}
+  .cls .meta{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .cls p{margin:8px 0 0;font-size:13.5px;color:var(--ink)}
+  .cls .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);
+            border-radius:20px;padding:1px 9px;font-size:11px;font-weight:600;margin-left:8px}
+
+  footer{margin-top:46px;color:var(--muted);font-size:12px;border-top:1px solid var(--hair);
+         padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">HW1 · Amazon Gift Cards · Phase 3</div>
+    <h1>Review Scoring Report</h1>
+    <p class="sub">Star rating (predicted 1–5) from title + text only, checked against the reviewer's true score.</p>
+  </header>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Headline numbers</h2>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section>
+    <h2>Predicted rating distribution <span>— how each review was scored</span></h2>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Answer-by-answer · right &amp; wrong</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Review</th><th>Predicted</th><th>Actual</th><th>Result</th><th>Model's reason</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Why it got it wrong <span>— grouped failure classes</span></h2>
+    <div id="classes"></div>
+  </section>
+
+  <footer>
+    Scoring used title + text only; the true rating was applied only after scoring to measure accuracy
+    and was never written to the output. Model: claude-haiku-4-5-20251001 via Anthropic's OpenAI-compatible endpoint.
+  </footer>
+
+</div>
+<script>
+const DATA = {"stats": {"n": 24, "exact": 18, "within1": 24, "pct_exact": 75.0, "pct_within1": 100.0, "mae": 0.25}, "rows": [{"text": "Great gift. Having Amazon money is always good.", "title": "Great gift", "true": 5, "pred": 5, "reason": "Reviewer satisfied with gift and appreciated the Amazon credit value.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "amazon gift card. Always the perfect gift.  I have never given one and had someone seem or act disappointed.  Just the opposite.  They are thrilled and excited to have a bit of a spree.  Always the perfect size and color!  Arrives in 1 day in most cases.  So it's never too late!  Lots of cards to chose from... thank you... birthday... wedding..baby..  and many that work for many occasions...", "title": "amazon gift card", "true": 5, "pred": 5, "reason": "5\nReviewer enthusiastically praises gift cards as always well-received, convenient, and available in many designs.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "perfect gift. When you have a person who is hard to shop for.. an amazon gift card is P E R F E C T.  Man or woman...  No matter what their hobby... lifestyle.. or age.  All you have to do is pick the $.  Don't forget to mention that it is a GIFT when you check out - you will have some gift card options.  I've ordered many of these over years.  They are always received with glee.  Woo hoo!  If you're looking for a great fit for me - this is just my size!  :)  Best to all!", "title": "perfect gift", "true": 5, "pred": 5, "reason": "5\nReviewer enthusiastically praises gift card's versatility, reliability, and recipient satisfaction across multiple purchases.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Nice looking. The tin is a nice touch and pretty large.  It's about 4&#34; in diameter and about 1/2&#34; thick.  I added a pretty red ribbon and it is perfect.  Who doesn't love shopping on Amazon? Arrived quickly, I have Prime... but I think they ship the gift cards out SUPER fast... like over night. In case you need it for a FAST gift.", "title": "Nice looking", "true": 5, "pred": 5, "reason": "5\nPositive language throughout, praised appearance, size, shipping speed, and overall satisfaction with product.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Not $10 Gift Cards. I bought this pack of Starbucks Gift cards in 2019. Ive given them to friends and I gave 2 to my daughter.<br />My daughter used one recently and it had $6.52 on the card not $10.00. She had the cashier check the balance of the other card and it had $5.32 on it! She had forgotten that she had these gift cards, so yes, 2 years later decided to use the when she found them! Do they decline in value? And then both had random amounts on them! I'm embarrassed now to have given them as gifts! Friends receiving the gift card aren't going to tell you that weren't able to cover their order with the card you gave them!!!", "title": "Not $10 Gift Cards", "true": 1, "pred": 1, "reason": "1\nThe reviewer received gift cards with less value than expected and felt embarrassed giving them as gifts.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Cute!. That snowman tin is adorable", "title": "Cute!", "true": 5, "pred": 5, "reason": "Reviewer uses enthusiastic language (\"Cute!\" and \"adorable\") indicating high satisfaction with the product.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Easy gift. Great and easy gift", "title": "Easy gift", "true": 5, "pred": 5, "reason": "Reviewer uses positive language twice, indicating high satisfaction with the product as a gift.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Great gift. Super cute nice quality tin<br />Your choose amount", "title": "Great gift", "true": 5, "pred": 5, "reason": "Reviewer praised the product as great, cute, and nice quality with positive tone throughout.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Gifts for my two granddaughters. They love it !!", "title": "Gifts for my two granddaughters", "true": 5, "pred": 5, "reason": "Enthusiastic praise with double exclamation marks indicates high satisfaction and product approval.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Great for saying \u201cthank you\u201d to the mail person, farrier, yard man,etc. So many people<br />Make your life better so remember them!", "title": "Great for saying \u201cthank you\u201d to the mail person, farrier, ya", "true": 5, "pred": 5, "reason": "Reviewer appreciates the product's usefulness for thanking helpful service workers and appreciates its thoughtful purpose.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Convenient, safe, and perfect gift. My grandson inlaw loves his gift cards, so it's the perfect gift for Christmas", "title": "Convenient, safe, and perfect gift", "true": 5, "pred": 5, "reason": "Reviewer expresses satisfaction with convenience, safety, and recipient's happiness with the product.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Giftcard. What can you say about a gift card? Well, it was valid. It's a good gift for someone who doesn't like to cook. Arrived promptly.", "title": "Giftcard", "true": 5, "pred": 4, "reason": "Valid gift card, arrived promptly, practical gift choice for non-cooks.", "correct": false, "diff": 1.0, "class": "Hedged framing", "inference": "The understated 'What can you say about a gift card?' tone reads as ambivalence, so the model hedges to 4; the actual reviewer was fully satisfied (5)."}, {"text": "Simple giftcard!. Easy way to gift money for birthdays.", "title": "Simple giftcard!", "true": 5, "pred": 5, "reason": "Reviewer finds the product simple, easy to use, and suitable for gifting purposes.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Great giftcard. Great gift for online shoppers!", "title": "Great giftcard", "true": 5, "pred": 5, "reason": "Reviewer uses \"great\" twice and recommends it as a gift, indicating high satisfaction.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Easy... Reloading is easy. Shopping is easy. Amazon is easy.", "title": "Easy", "true": 5, "pred": 5, "reason": "Reviewer emphasizes ease and satisfaction with reloading, shopping, and Amazon service.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "One Star. Card did not work!!!!", "title": "One Star", "true": 1, "pred": 1, "reason": "Product failed to function as intended, causing complete dissatisfaction.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Great Product.. I bought this for a Christmas gift.The recipient really liked it.", "title": "Great Product", "true": 5, "pred": 5, "reason": "Reviewer explicitly states \"Great Product\" and recipient \"really liked it,\" indicating high satisfaction.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "No note attached to sent gift card. What a pretty gift card presentation , the recipient loved it ! I have one complaint , I took the time and wrote a short note to the recipient of the gift card so she knew who and why the GC was being sent but the note wasn\u2019t attached. I\u2019ve used the option to write a note on many occasions and several times it showed up without the note . I actually had to contact her to ask if she had checked her mail knowing it had arrived .", "title": "No note attached to sent gift card", "true": 5, "pred": 4, "reason": "4\nThe gift card presentation was loved, but the note feature failed to deliver as promised multiple times.", "correct": false, "diff": 1.0, "class": "Complaint outweighs praise", "inference": "A concrete, repeated failing ('the note wasn't attached') dominates the model's read and drags a loved gift card to 4, even though the reviewer praised it elsewhere."}, {"text": "Gift card. Perfect! Arrived just when stated!", "title": "Gift card", "true": 5, "pred": 5, "reason": "Reviewer satisfied with timely delivery and product meeting expectations.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Good. Good gift card", "title": "Good", "true": 5, "pred": 5, "reason": "Reviewer expresses satisfaction with the product and recommends it as a gift.", "correct": true, "diff": 0.0, "class": null, "inference": null}, {"text": "Good Product. Good Product", "title": "Good Product", "true": 5, "pred": 4, "reason": "Reviewer states \"Good Product\" twice, indicating satisfaction but lacks enthusiasm for highest rating.", "correct": false, "diff": 1.0, "class": "Generic praise underweighted", "inference": "Repetitive, superlative-free text ('Good Product. Good Product') is judged 'satisfied but not effusive' -> 4; Amazon reviewers routinely give bare 'good product' a 5."}, {"text": "Good Product. Good Product", "title": "Good Product", "true": 5, "pred": 4, "reason": "Reviewer states \"good product\" twice, indicating satisfaction but lacks enthusiasm for five stars.", "correct": false, "diff": 1.0, "class": "Generic praise underweighted", "inference": "Same as above: brevity and absence of enthusiasm are read as below-perfect, while the true rating is 5."}, {"text": "Good Product. Good Product", "title": "Good Product", "true": 5, "pred": 4, "reason": "Reviewer states \"good product\" twice, indicating satisfaction but lacks enthusiasm for highest rating.", "correct": false, "diff": 1.0, "class": "Generic praise underweighted", "inference": "Same as above: the model withholds the top score for terse, un-adjectival praise; actual rating is 5."}, {"text": "Good Product. Good Product", "title": "Good Product", "true": 5, "pred": 4, "reason": "Reviewer states \"Good Product\" twice, indicating satisfaction but lacks enthusiasm for a perfect rating.", "correct": false, "diff": 1.0, "class": "Generic praise underweighted", "inference": "Same as above: minimal text without superlatives is scored 4 by the model, but the reviewer awarded 5."}], "classes": [{"name": "Hedged framing", "count": 1, "example": "Giftcard. What can you say about a gift card? Well, it was valid. It's", "inference": "The understated 'What can you say about a gift card?' tone reads as ambivalence, so the model hedges to 4; the actual reviewer was fully satisfied (5).", "pred": "4"}, {"name": "Complaint outweighs praise", "count": 1, "example": "No note attached to sent gift card. What a pretty gift card presentati", "inference": "A concrete, repeated failing ('the note wasn't attached') dominates the model's read and drags a loved gift card to 4, even though the reviewer praised it elsewhere.", "pred": "4"}, {"name": "Generic praise underweighted", "count": 4, "example": "Good Product. Good Product", "inference": "Repetitive, superlative-free text ('Good Product. Good Product') is judged 'satisfied but not effusive' -> 4; Amazon reviewers routinely give bare 'good product' a 5.", "pred": "4/4/4/4"}], "distribution": [{"star": 1, "count": 2}, {"star": 4, "count": 6}, {"star": 5, "count": 16}]};
+
+/* Headline cards */
+(function(){
+  const s=DATA.stats;
+  const cards=[
+    ["Exact matches", s.pct_exact+"%", s.exact+"/"+s.n+" predicted == actual"],
+    ["Within ±1 star", s.pct_within1+"%", "off by one or resolved"],
+    ["Mean abs. error", s.mae.toFixed(2)+" <small>★</small>", "average distance from true"],
+    ["Reviewed", s.n, "reviews scored from title + text"],
+  ];
+  let h="";
+  for(const [t,v,d] of cards) h+=`<div class="card"><b>${v}</b><span>${t} — ${d}</span></div>`;
+  document.getElementById('cards').innerHTML=h;
+})();
+
+/* Distribution bars */
+(function(){
+  const d=DATA.distribution; const max=Math.max(...d.map(x=>x.count),1);
+  let h="";
+  for(const x of d) h+=`<div class="bar" style="height:${(x.count/max)*100}%" title="${x.count} review(s)"><small>${x.count}</small><fig>${x.star}★</fig></div>`;
+  document.getElementById('bars').innerHTML=h;
+})();
+
+/* Rows table */
+(function(){
+  const r=DATA.rows; let h="";
+  r.forEach((x,i)=>{
+    if(x.pred==null) return;
+    const ok=x.correct;
+    const badge=ok?`<span class="pill ok">correct</span>`:`<span class="pill bad">wrong</span>`;
+    const title=(x.title||"").split(" ").slice(0,6).join(" ");
+    h+=`<tr>
+      <td class="num">${i+1}</td>
+      <td class="review">${esc(x.text.slice(0,70))}${x.text.length>70?"…":""}<br><small>${esc(title)}</small></td>
+      <td class="num stars">${x.pred}★</td>
+      <td class="num">${x.true}★</td>
+      <td>${badge}</td>
+      <td class="reason">${esc(x.reason)}</td>
+    </tr>`;
+  });
+  document.getElementById('rows').innerHTML=h;
+})();
+
+/* Classes */
+(function(){
+  const c=DATA.classes; if(!c||!c.length){document.getElementById('classes').innerHTML='<p style="color:var(--muted)">No wrong answers to classify.</p>';return;}
+  let h="";
+  for(const x of c){
+    h+=`<div class="cls"><h3>${esc(x.name)}<span class="tag">${x.count}× · &#8594;${esc(x.pred)}</span></h3>
+      <div class="meta">e.g. ${esc(x.example)}…</div>
+      <p>${esc(x.inference)}</p></div>`;
+  }
+  document.getElementById('classes').innerHTML=h;
+})();
+
+function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+</script>
+</body>
+</html>

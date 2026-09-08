@@ -9,3 +9,4 @@ __pycache__/
 *.pyc
 *.jsonl
 predictions*.csv
+report_data.json
