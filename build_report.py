@@ -6,6 +6,7 @@ D = json.load(open("report_data.json"))
 rows = D["rows"]
 stats = D["stats"]
 emotion_stats = D.get("emotion_stats")
+rating_stats = D.get("rating_stats")
 EMOTIONS = ["anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust"]
 
 # Words/markers that signal a complaint or reservation in the review.
@@ -77,6 +78,7 @@ payload = {
     "classes": class_rows,
     "distribution": [{"star": k, "count": v} for k, v in sorted(dist.items())],
     "emotion_stats": emotion_stats,
+    "rating_stats": rating_stats,
 }
 
 # ---- HTML (same theme; only the classification source changed) ----
@@ -167,6 +169,13 @@ html = r"""<!DOCTYPE html>
   .cls .meta{font-size:12px;color:var(--muted);margin-bottom:10px}
   .cls p{margin:8px 0 0;font-size:13.5px;color:var(--ink)}
   .cls .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:20px;padding:1px 9px;font-size:11px;font-weight:600;margin-left:8px}
+  .conf-diag{background:var(--good-soft);color:var(--good);font-weight:600}
+  .conf-off{background:rgba(169,122,107,0.3)}
+  .accuracy-card{background:var(--card);border:2px solid var(--hair);border-radius:6px;padding:8px 10px;text-align:center;font-size:11px}
+  .accuracy-card.good{border-color:var(--good)}
+  .accuracy-card.bad{border-color:var(--bad)}
+  .accuracy-card b{display:block;font-size:16px;margin:4px 0 2px}
+  .accuracy-card span{color:var(--muted);display:block;font-size:9px}
   footer{margin-top:46px;color:var(--muted);font-size:12px;border-top:1px solid var(--hair);padding-top:16px}
 </style>
 </head>
@@ -190,8 +199,9 @@ html = r"""<!DOCTYPE html>
   </section>
   <div class="rule"></div>
   <section>
-    <h2>Predicted rating distribution <span>— how each review was scored</span></h2>
-    <div class="bars" id="bars"></div>
+    <h2>Star rating distribution <span>— actual vs. predicted</span></h2>
+    <div class="emo-bars-wrap" id="rating-bars"></div>
+    <div id="per-class-accuracy" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px"></div>
   </section>
   <div class="rule"></div>
   <section>
@@ -199,6 +209,7 @@ html = r"""<!DOCTYPE html>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
       <button class="table-toggle expanded" id="tab-emo" data-table="emo">Primary emotion</button>
       <button class="table-toggle collapsed" id="tab-ratings" data-table="ratings">Star ratings</button>
+      <button class="table-toggle collapsed" id="tab-confusion" data-table="confusion-table">Confusion matrix</button>
       <button class="table-toggle collapsed" id="tab-classes" data-table="classes">Failure classes</button>
     </div>
     <div id="emo" class="table-content">
@@ -234,6 +245,12 @@ html = r"""<!DOCTYPE html>
       </table>
     </div>
     <div id="classes" class="table-content hidden"></div>
+    <div id="confusion-table" class="table-content hidden">
+      <table style="font-size:12px">
+        <thead id="confusion-header"></thead>
+        <tbody id="confusion-body"></tbody>
+      </table>
+    </div>
   </section>
   <footer>
     Scoring used title + text only; the true rating was applied only after scoring and was never written to the model input.
@@ -322,7 +339,18 @@ document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-a
   ['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).addEventListener('change',render));
   document.getElementById('emo-clearf').addEventListener('click',()=>{['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).value='');render();});
 })();
-['tab-emo','tab-ratings','tab-classes'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;btn.addEventListener('click',()=>{const tableId=btn.dataset.table;document.querySelectorAll('.table-content').forEach(el=>el.classList.add('hidden'));document.querySelectorAll('.table-toggle').forEach(el=>el.classList.remove('expanded'));document.getElementById(tableId).classList.remove('hidden');btn.classList.add('expanded');});});
+function barsHtml(categories,dist,label,fmt){const max=Math.max(...categories.map(c=>dist[c]||0),1);let b="";for(const c of categories){const v=dist[c]||0;b+=`<div class="bar" style="height:${(v/max)*100}%" title="${v} review(s)"><small>${v}</small><fig>${fmt?fmt(c):c}</fig></div>`;}return `<div><h4>${label}</h4><div class="bars">${b}</div></div>`;}
+(function(){const rs=DATA.rating_stats;if(!rs){return;}
+document.getElementById('rating-bars').innerHTML=barsHtml([1,2,3,4,5],rs.true_distribution,'Actual',c=>c+'★')+barsHtml([1,2,3,4,5],rs.pred_distribution,'Predicted',c=>c+'★');
+let html="";for(const c of[1,2,3,4,5]){const pc=rs.per_class[c];const pct=pc.pct_correct;const isGood=pct>=70;html+=`<div class="accuracy-card ${isGood?'good':'bad'}"><b>${pct}%</b><span>${pc.correct}/${pc.n}</span></div>`;}
+document.getElementById('per-class-accuracy').innerHTML=html;
+let confHtml="<tr><th style='width:50px'>True\\Pred</th>";for(let p=1;p<=5;p++)confHtml+=`<th style='text-align:center'>${p}★</th>`;confHtml+="</tr>";
+const maxOff=Math.max(...[].concat(...[1,2,3,4,5].map(t=>[1,2,3,4,5].filter(p=>p!==t).map(p=>rs.confusion[t][p]))),1);
+for(let t=1;t<=5;t++){confHtml+=`<tr><th>${t}★</th>`;for(let p=1;p<=5;p++){const cnt=rs.confusion[t][p];const isD=t===p;const opacity=!isD?Math.min(cnt/maxOff,1)*0.5:0;confHtml+=`<td class="${isD?'conf-diag':'conf-off'}" style="${!isD?`opacity:${opacity+0.3}`:''};text-align:center;padding:4px;border:1px solid var(--hair)"><b>${cnt}</b></td>`;}confHtml+="</tr>";}
+document.getElementById('confusion-header').innerHTML=confHtml.split('<tr>')[1].split('</tr>')[0];
+document.getElementById('confusion-body').innerHTML=confHtml.split('</tr>').slice(1,-1).map(r=>'<tr>'+r+'</tr>').join('');
+})();
+['tab-emo','tab-ratings','tab-classes','tab-confusion'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;btn.addEventListener('click',()=>{const tableId=btn.dataset.table;document.querySelectorAll('.table-content').forEach(el=>el.classList.add('hidden'));document.querySelectorAll('.table-toggle').forEach(el=>el.classList.remove('expanded'));document.getElementById(tableId).classList.remove('hidden');btn.classList.add('expanded');});});
 function esc(s){return(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 </script>
 </body>

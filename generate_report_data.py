@@ -129,7 +129,27 @@ def main():
         },
     }
 
-    json.dump({"stats": stats, "emotion_stats": emotion_stats, "rows": rows}, open(OUT, "w"), indent=2)
+    valid_stars = [r for r in rows if r["pred"] is not None]
+    true_dist = {c: sum(1 for r in valid_stars if r["true"] == c) for c in range(1, 6)}
+    pred_dist = {c: sum(1 for r in valid_stars if r["pred"] == c) for c in range(1, 6)}
+    confusion_stars = {
+        t: {p: sum(1 for r in valid_stars if r["true"] == t and r["pred"] == p) for p in range(1, 6)}
+        for t in range(1, 6)
+    }
+    per_class = {
+        c: {
+            "n": true_dist[c],
+            "correct": confusion_stars[c][c],
+            "pct_correct": round(100 * confusion_stars[c][c] / true_dist[c], 1) if true_dist[c] else 0,
+        }
+        for c in range(1, 6)
+    }
+    rating_stats = {
+        "n": len(valid_stars), "true_distribution": true_dist, "pred_distribution": pred_dist,
+        "confusion": confusion_stars, "per_class": per_class,
+    }
+
+    json.dump({"stats": stats, "emotion_stats": emotion_stats, "rating_stats": rating_stats, "rows": rows}, open(OUT, "w"), indent=2)
     print(f"\nWrote {OUT}: {json.dumps(stats)}  ({time.time()-t0:.0f}s)")
     print(f"Emotion agreement: {emotion_stats['pct_agree']}% ({agree}/{len(valid)})")
 
