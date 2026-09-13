@@ -339,8 +339,8 @@ document.getElementById('rating-bars').innerHTML=barsHtml([1,2,3,4,5],rs.true_di
 let html="";for(const c of[1,2,3,4,5]){const pc=rs.per_class[c];const pct=pc.pct_correct;const isGood=pct>=70;html+=`<div class="accuracy-card ${isGood?'good':'bad'}"><b>${pct}%</b><span>${pc.correct}/${pc.n}</span></div>`;}
 document.getElementById('per-class-accuracy').innerHTML=html;
 let confHtml="<tr><th style='width:50px'>True\\Pred</th>";for(let p=1;p<=5;p++)confHtml+=`<th style='text-align:center'>${p}★</th>`;confHtml+="</tr>";
-const maxOff=Math.max(...[].concat(...[1,2,3,4,5].map(t=>[1,2,3,4,5].filter(p=>p!==t).map(p=>rs.confusion[t][p]))),1);
-for(let t=1;t<=5;t++){confHtml+=`<tr><th>${t}★</th>`;for(let p=1;p<=5;p++){const cnt=rs.confusion[t][p];const isD=t===p;const opacity=!isD?Math.min(cnt/maxOff,1)*0.5:0;confHtml+=`<td class="${isD?'conf-diag':'conf-off'}" style="${!isD?`opacity:${opacity+0.3}`:''};text-align:center;padding:4px;border:1px solid var(--hair)"><b>${cnt}</b></td>`;}confHtml+="</tr>";}
+const maxOff=Math.max(...[].concat(...[1,2,3,4,5].map(t=>[1,2,3,4,5].filter(p=>p!==t).map(p=>rs.confusion[String(t)][String(p)]))),1);
+for(let t=1;t<=5;t++){confHtml+=`<tr><th>${t}★</th>`;for(let p=1;p<=5;p++){const cnt=rs.confusion[String(t)][String(p)];const isD=t===p;const opacity=!isD?Math.min(cnt/maxOff,1)*0.5:0;confHtml+=`<td class="${isD?'conf-diag':'conf-off'}" style="${!isD?`opacity:${opacity+0.3}`:''};text-align:center;padding:4px;border:1px solid var(--hair)"><b>${cnt}</b></td>`;}confHtml+="</tr>";}
 document.getElementById('confusion-header').innerHTML=confHtml.split('<tr>')[1].split('</tr>')[0];
 document.getElementById('confusion-body').innerHTML=confHtml.split('</tr>').slice(1,-1).map(r=>'<tr>'+r+'</tr>').join('');
 })();
