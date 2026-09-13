@@ -98,17 +98,17 @@
   <div class="rule"></div>
   <div class="overview-grid">
     <div>
-      <h3>Primary emotion <span>LLM vs. NRC</span></h3>
-      <div class="cards" id="emo-cards"></div>
-      <div class="emo-bars-wrap" id="emo-bars"></div>
-    </div>
-    <div>
       <h3>Headline numbers <span>Star accuracy</span></h3>
       <div class="cards" id="cards"></div>
     </div>
     <div>
       <h3>Predicted rating <span>Distribution</span></h3>
       <div class="bars" id="bars"></div>
+    </div>
+    <div>
+      <h3>Primary emotion <span>LLM vs. NRC</span></h3>
+      <div class="cards" id="emo-cards"></div>
+      <div class="emo-bars-wrap" id="emo-bars"></div>
     </div>
   </div>
   <div class="rule"></div>
@@ -250,10 +250,7 @@ document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-a
   ['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).addEventListener('change',render));
   document.getElementById('emo-clearf').addEventListener('click',()=>{['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).value='');render();});
 })();
-function toggleTable(btnId,contentId){const btn=document.getElementById(btnId),content=document.getElementById(contentId);if(!btn||!content)return;btn.addEventListener('click',()=>{content.classList.toggle('hidden');btn.classList.toggle('collapsed');btn.classList.toggle('expanded');btn.textContent=(btn.classList.contains('expanded')?'▼ Hide':'▶ Show ')+btn.textContent.slice(2);});}
-toggleTable('emo-toggle','emo-table-content');
-toggleTable('ratings-toggle','ratings-table-content');
-const classesToggle=document.getElementById('classes-toggle'),classesDiv=document.getElementById('classes');if(classesToggle)classesToggle.addEventListener('click',()=>{classesDiv.classList.toggle('hidden');classesToggle.classList.toggle('collapsed');classesToggle.classList.toggle('expanded');classesToggle.textContent=(classesToggle.classList.contains('expanded')?'▼ Hide':'▶ Show ')+classesToggle.textContent.slice(2);});
+['emo-toggle','ratings-toggle','classes-toggle'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;const contentId=id.replace('-toggle','')+(id.includes('emo')?'-table-content':id.includes('ratings')?'-table-content':'');const content=document.getElementById(contentId);if(!content)return;const label=btn.textContent.slice(2);btn.addEventListener('click',()=>{content.classList.toggle('hidden');const isExp=!content.classList.contains('hidden');btn.textContent=(isExp?'▼ Hide':'▶ Show ')+label;btn.classList.toggle('collapsed');btn.classList.toggle('expanded');});});
 function esc(s){return(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 </script>
 </body>
