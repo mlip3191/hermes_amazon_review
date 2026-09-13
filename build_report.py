@@ -5,6 +5,8 @@ import json
 D = json.load(open("report_data.json"))
 rows = D["rows"]
 stats = D["stats"]
+emotion_stats = D.get("emotion_stats")
+EMOTIONS = ["anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust"]
 
 # Words/markers that signal a complaint or reservation in the review.
 COMPLAINT = ["mistake", "deduction", "complaint", "note", "without the fees",
@@ -74,6 +76,7 @@ payload = {
     "rows": rows,
     "classes": class_rows,
     "distribution": [{"star": k, "count": v} for k, v in sorted(dist.items())],
+    "emotion_stats": emotion_stats,
 }
 
 # ---- HTML (same theme; only the classification source changed) ----
@@ -131,6 +134,12 @@ html = r"""<!DOCTYPE html>
   .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.03em}
   .pill.ok{background:var(--good-soft);color:var(--good)}
   .pill.bad{background:var(--bad-soft);color:var(--bad)}
+  .pill.emo{background:var(--accent-soft);color:var(--accent)}
+  .emo-bars-wrap{display:flex;gap:24px;flex-wrap:wrap;margin:14px 0 4px}
+  .emo-bars-wrap>div{flex:1;min-width:260px}
+  .emo-bars-wrap h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .emo-bars-wrap .bars{height:100px}
+  .emo-bars-wrap .bar fig{font-size:8px}
   .stars{color:var(--accent);letter-spacing:.05em;font-weight:600}
   .review{color:var(--ink);max-width:330px}
   .review small{color:var(--muted)}
@@ -172,6 +181,26 @@ html = r"""<!DOCTYPE html>
     </table>
   </section>
   <div class="rule"></div>
+  <section>
+    <h2>Primary emotion <span>— LLM take vs. NRC lexicon take, compared</span></h2>
+    <div class="cards" id="emo-cards"></div>
+    <div class="emo-bars-wrap" id="emo-bars"></div>
+    <div class="filterbar">
+      <div class="fgroup"><label>Agree</label>
+        <select id="f-emo-agree"><option value="">All</option><option>agree</option><option>differ</option></select></div>
+      <div class="fgroup"><label>LLM emotion</label>
+        <select id="f-emo-llm"><option value="">All</option></select></div>
+      <div class="fgroup"><label>Lexicon emotion</label>
+        <select id="f-emo-lex"><option value="">All</option></select></div>
+      <div class="countnote" id="emo-count"></div>
+      <button class="clear" id="emo-clearf">clear filters</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Review</th><th>LLM emotion</th><th>Lexicon emotion</th><th>Agree</th></tr></thead>
+      <tbody id="emo-rows"></tbody>
+    </table>
+  </section>
+  <div class="rule"></div>
   <section><h2>Why it got it wrong <span>— grouped failure classes</span></h2><div id="classes"></div></section>
   <footer>
     Scoring used title + text only; the true rating was applied only after scoring and was never written to the model input.
@@ -209,6 +238,57 @@ render();
 document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-actual','f-pred'].forEach(id=>document.getElementById(id).value='');render();});
 })();
 (function(){const c=DATA.classes;if(!c||!c.length){document.getElementById('classes').innerHTML='<p style="color:var(--muted)">No wrong answers to classify.</p>';return;}let h="";for(const x of c){h+=`<div class="cls"><h3>${esc(x.name)}<span class="tag">${x.count}× · ${esc(x.pred_vs_true)}</span></h3><div class="meta">e.g. ${esc(x.example)}…</div><p>${esc(x.inference)}</p></div>`;}document.getElementById('classes').innerHTML=h;})();
+(function(){
+  const es=DATA.emotion_stats;
+  const section=document.getElementById('emo-cards').closest('section');
+  if(!es){section.style.display='none';return;}
+  const EMOTIONS=["anger","anticipation","disgust","fear","joy","sadness","surprise","trust"];
+  const cards=[
+    ["Emotion agreement",es.pct_agree+"%",es.agree+"/"+es.n+" LLM and lexicon picked the same emotion"],
+    ["Rows compared",es.n,"reviews with both an LLM and lexicon emotion"]];
+  let h="";for(const[t,v,d]of cards)h+=`<div class="card"><b>${v}</b><span>${t} — ${d}</span></div>`;
+  document.getElementById('emo-cards').innerHTML=h;
+
+  function barsHtml(dist,label){
+    const max=Math.max(...EMOTIONS.map(e=>dist[e]||0),1);
+    let b="";for(const e of EMOTIONS){const v=dist[e]||0;b+=`<div class="bar" style="height:${(v/max)*100}%" title="${v} review(s)"><small>${v}</small><fig>${e}</fig></div>`;}
+    return `<div><h4>${label}</h4><div class="bars">${b}</div></div>`;
+  }
+  document.getElementById('emo-bars').innerHTML =
+    barsHtml(es.llm_distribution,'LLM emotion') + barsHtml(es.lexicon_distribution,'Lexicon emotion');
+
+  const llmSel=document.getElementById('f-emo-llm'), lexSel=document.getElementById('f-emo-lex');
+  for(const e of EMOTIONS){
+    llmSel.insertAdjacentHTML('beforeend',`<option>${e}</option>`);
+    lexSel.insertAdjacentHTML('beforeend',`<option>${e}</option>`);
+  }
+
+  const r=DATA.rows.filter(x=>x.llm_emotion&&x.lexicon_emotion);
+  const rowsEl=document.getElementById('emo-rows');
+  function rowHtml(x,i){
+    const agreeBadge=x.emotion_agree?`<span class="pill ok">agree</span>`:`<span class="pill bad">differ</span>`;
+    return `<tr><td class="num">${i+1}</td><td class="review">${esc(x.text.slice(0,70))}${x.text.length>70?"…":""}</td>`+
+      `<td><span class="pill emo">${esc(x.llm_emotion)}</span></td>`+
+      `<td><span class="pill emo">${esc(x.lexicon_emotion)}</span></td>`+
+      `<td>${agreeBadge}</td></tr>`;
+  }
+  function render(){
+    const fAgree=document.getElementById('f-emo-agree').value;
+    const fLlm=llmSel.value, fLex=lexSel.value;
+    let shown=0,html="";
+    r.forEach((x,i)=>{
+      if(fAgree && (fAgree==='agree')!==!!x.emotion_agree)return;
+      if(fLlm && x.llm_emotion!==fLlm)return;
+      if(fLex && x.lexicon_emotion!==fLex)return;
+      shown++;html+=rowHtml(x,i);
+    });
+    rowsEl.innerHTML=html;
+    document.getElementById('emo-count').textContent=shown===r.length?`showing all ${shown}`:`showing ${shown} of ${r.length}`;
+  }
+  render();
+  ['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).addEventListener('change',render));
+  document.getElementById('emo-clearf').addEventListener('click',()=>{['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).value='');render();});
+})();
 function esc(s){return(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 </script>
 </body>
