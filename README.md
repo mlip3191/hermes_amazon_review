@@ -38,3 +38,17 @@ Requires `.venv` with `openai`, `numpy`, `pandas`, `scikit-learn` installed; API
 - Failure mode classification for wrong predictions
 
 `report_data.json` — raw predictions: `{stats, emotion_stats, rows}`
+
+## Recent Changes
+
+### v0.4.1 — UI/UX Polish & Bug Fixes
+- **Dynamic tabbed tables** (a14a5c2) — Single "View details" section with tabs to switch between emotion, star ratings, and failure classes tables (instead of three separate sections)
+- **Reordered layout** (38c11e5) — Headline numbers → Primary emotion → Predicted rating as vertical stack, focused flow
+- **Bar chart label alignment** (f7c941f) — Fixed count labels at top of bars overlapping with section titles; all labels now on same baseline
+- **LLM prompt fix** (f7c941f) — Replaced literal placeholder tokens with worked example; fixed parse failures on ambiguous reviews (5/150 → 0/150)
+- **Collapsible tables** (e697232) — Tables expand/collapse via buttons instead of always visible
+
+### v0.4.0 — Phase 4: Dual Primary-Emotion Detection
+- **LLM emotion scoring** (1c6a7b1) — Extended `generate_report_data.py` prompt to return `STAR|EMOTION|reason` in single API call
+- **NRC lexicon scorer** (1c6a7b1) — Standalone `emotion_lexicon.py` (no API calls, no key needed) scores reviews against Word-Emotion Association Lexicon; can rescore existing `report_data.json`
+- **Emotion comparison** (1c6a7b1) — Report includes LLM vs. lexicon emotion agreement %, confusion matrix, and side-by-side distributions
