@@ -148,6 +148,9 @@ html = r"""<!DOCTYPE html>
   .emo-bars-wrap>div{flex:1;min-width:260px}
   .emo-bars-wrap h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
   .emo-bars-wrap .bars{height:100px}
+  section:first-of-type .emo-bars-wrap{gap:12px;margin:12px 0}
+  section:first-of-type .emo-bars-wrap>div{min-width:180px}
+  section:first-of-type .emo-bars-wrap .bars{height:70px}
   .overview-grid{display:flex;gap:32px;flex-wrap:wrap}
   .overview-grid>div{flex:1;min-width:300px}
   .overview-grid h3{margin:0 0 10px;font-size:13px;letter-spacing:.04em;color:var(--accent);font-weight:650}
@@ -188,27 +191,18 @@ html = r"""<!DOCTYPE html>
   </header>
   <div class="rule"></div>
   <section>
-    <h2>Headline numbers</h2>
+    <h2>Key metrics</h2>
     <div class="cards" id="cards"></div>
-  </section>
-  <div class="rule"></div>
-  <section>
-    <h2>Primary emotion <span>— LLM take vs. NRC lexicon take, compared</span></h2>
-    <div class="cards" id="emo-cards"></div>
-    <div class="emo-bars-wrap" id="emo-bars"></div>
-  </section>
-  <div class="rule"></div>
-  <section>
-    <h2>Star rating distribution <span>— actual vs. predicted</span></h2>
-    <div class="emo-bars-wrap" id="rating-bars"></div>
-    <div id="per-class-accuracy" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px"></div>
+    <div class="cards" id="emo-cards" style="margin-top:12px"></div>
+    <div class="cards" id="rating-cards" style="margin-top:12px"></div>
   </section>
   <div class="rule"></div>
   <section>
     <h2>View details</h2>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button class="table-toggle expanded" id="tab-emo" data-table="emo">Primary emotion</button>
+      <button class="table-toggle expanded" id="tab-emo" data-table="emo">Emotion detail</button>
       <button class="table-toggle collapsed" id="tab-ratings" data-table="ratings">Star ratings</button>
+      <button class="table-toggle collapsed" id="tab-distributions" data-table="distributions">Distributions</button>
       <button class="table-toggle collapsed" id="tab-confusion" data-table="confusion-table">Confusion matrix</button>
       <button class="table-toggle collapsed" id="tab-classes" data-table="classes">Failure classes</button>
     </div>
@@ -244,6 +238,14 @@ html = r"""<!DOCTYPE html>
         <tbody id="rows"></tbody>
       </table>
     </div>
+    <div id="distributions" class="table-content hidden">
+      <h3 style="font-size:13px;margin:0 0 12px">Emotion distributions</h3>
+      <div class="emo-bars-wrap" id="emo-bars-detail"></div>
+      <div style="margin-top:24px"><h3 style="font-size:13px;margin:0 0 10px">Star rating distribution</h3>
+      <div class="emo-bars-wrap" id="rating-bars-detail"></div>
+      <div style="margin-top:20px"><h3 style="font-size:13px;margin:0 0 10px">Star rating per-class accuracy</h3>
+      <div id="per-class-accuracy" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div></div></div>
+    </div>
     <div id="classes" class="table-content hidden"></div>
     <div id="confusion-table" class="table-content hidden">
       <table style="font-size:12px">
@@ -259,13 +261,13 @@ html = r"""<!DOCTYPE html>
 </div>
 <script>
 const DATA = __DATA__;
-(function(){const s=DATA.stats;const cards=[
+console.log('DATA loaded:', Object.keys(DATA));
+(function(){const s=DATA.stats;console.log('Headlines IIFE:', s);const cards=[
   ["Exact matches",s.pct_exact+"%",s.exact+"/"+s.n+" predicted == actual"],
   ["Within ±1 star",s.pct_within1+"%","off by one or resolved"],
   ["Mean abs. error",s.mae.toFixed(2)+" <small>★</small>","average distance from true"],
   ["Reviewed",s.n,"reviews scored from title + text"]];
 let h="";for(const[t,v,d]of cards)h+=`<div class="card"><b>${v}</b><span>${t} — ${d}</span></div>`;document.getElementById('cards').innerHTML=h;})();
-(function(){const d=DATA.distribution;const max=Math.max(...d.map(x=>x.count),1);let h="";for(const x of d)h+=`<div class="bar" style="height:${(x.count/max)*100}%" title="${x.count} review(s)"><small>${x.count}</small><fig>${x.star}★</fig></div>`;document.getElementById('bars').innerHTML=h;})();
 (function(){const r=DATA.rows;const rowsEl=document.getElementById('rows');
 function rowHtml(x,i){const ok=x.correct;const badge=ok?`<span class="pill ok">correct</span>`:`<span class="pill bad">wrong</span>`;const title=(x.title||"").split(" ").slice(0,6).join(" ");return `<tr><td class="num">${i+1}</td><td class="review">${esc(x.text.slice(0,70))}${x.text.length>70?"…":""}<br><small>${esc(title)}</small></td><td class="num stars">${x.pred}★</td><td class="num">${x.true}★</td><td>${badge}</td><td class="reason">${esc(x.reason)}</td></tr>`;}
 function render(){
@@ -287,6 +289,8 @@ render();
 ['f-result','f-actual','f-pred'].forEach(id=>document.getElementById(id).addEventListener('change',render));
 document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-actual','f-pred'].forEach(id=>document.getElementById(id).value='');render();});
 })();
+function barsHtml(categories,dist,label,fmt){const max=Math.max(...categories.map(c=>dist[c]||0),1);let b="";for(const c of categories){const v=dist[c]||0;b+=`<div class="bar" style="height:${(v/max)*100}%" title="${v} review(s)"><small>${v}</small><fig>${fmt?fmt(c):c}</fig></div>`;}return `<div><h4>${label}</h4><div class="bars">${b}</div></div>`;}
+function esc(s){return(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 (function(){const c=DATA.classes;if(!c||!c.length){document.getElementById('classes').innerHTML='<p style="color:var(--muted)">No wrong answers to classify.</p>';return;}let h="";for(const x of c){h+=`<div class="cls"><h3>${esc(x.name)}<span class="tag">${x.count}× · ${esc(x.pred_vs_true)}</span></h3><div class="meta">e.g. ${esc(x.example)}…</div><p>${esc(x.inference)}</p></div>`;}document.getElementById('classes').innerHTML=h;})();
 (function(){
   const es=DATA.emotion_stats;
@@ -298,7 +302,7 @@ document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-a
     ["Rows compared",es.n,"reviews with both an LLM and lexicon emotion"]];
   let h="";for(const[t,v,d]of cards)h+=`<div class="card"><b>${v}</b><span>${t} — ${d}</span></div>`;
   document.getElementById('emo-cards').innerHTML=h;
-  document.getElementById('emo-bars').innerHTML =
+  document.getElementById('emo-bars-detail').innerHTML =
     barsHtml(EMOTIONS,es.llm_distribution,'LLM emotion') + barsHtml(EMOTIONS,es.lexicon_distribution,'Lexicon emotion');
 
   const llmSel=document.getElementById('f-emo-llm'), lexSel=document.getElementById('f-emo-lex');
@@ -333,9 +337,9 @@ document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-a
   ['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).addEventListener('change',render));
   document.getElementById('emo-clearf').addEventListener('click',()=>{['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).value='');render();});
 })();
-function barsHtml(categories,dist,label,fmt){const max=Math.max(...categories.map(c=>dist[c]||0),1);let b="";for(const c of categories){const v=dist[c]||0;b+=`<div class="bar" style="height:${(v/max)*100}%" title="${v} review(s)"><small>${v}</small><fig>${fmt?fmt(c):c}</fig></div>`;}return `<div><h4>${label}</h4><div class="bars">${b}</div></div>`;}
 (function(){const rs=DATA.rating_stats;if(!rs){return;}
-document.getElementById('rating-bars').innerHTML=barsHtml([1,2,3,4,5],rs.true_distribution,'Actual',c=>c+'★')+barsHtml([1,2,3,4,5],rs.pred_distribution,'Predicted',c=>c+'★');
+let rh="";const ratingCards=[["Exact match",rs.per_class[5].correct+rs.per_class[4].correct,`stars 4-5 predicted correctly`],["Within ±1 star",rs.n-Object.values(rs.confusion['1']).reduce((a,b)=>a+b,0)-Object.values(rs.confusion['2']).reduce((a,b)=>a+b,0),`reviews off by ≤1 star`]];for(const[t,v,d]of ratingCards)rh+=`<div class="card"><b>${v}</b><span>${t} — ${d}</span></div>`;document.getElementById('rating-cards').innerHTML=rh;
+document.getElementById('rating-bars-detail').innerHTML=barsHtml([1,2,3,4,5],rs.true_distribution,'Actual',c=>c+'★')+barsHtml([1,2,3,4,5],rs.pred_distribution,'Predicted',c=>c+'★');
 let html="";for(const c of[1,2,3,4,5]){const pc=rs.per_class[c];const pct=pc.pct_correct;const isGood=pct>=70;html+=`<div class="accuracy-card ${isGood?'good':'bad'}"><b>${pct}%</b><span>${pc.correct}/${pc.n}</span></div>`;}
 document.getElementById('per-class-accuracy').innerHTML=html;
 let confHtml="<tr><th style='width:50px'>True\\Pred</th>";for(let p=1;p<=5;p++)confHtml+=`<th style='text-align:center'>${p}★</th>`;confHtml+="</tr>";
@@ -344,8 +348,7 @@ for(let t=1;t<=5;t++){confHtml+=`<tr><th>${t}★</th>`;for(let p=1;p<=5;p++){con
 document.getElementById('confusion-header').innerHTML=confHtml.split('<tr>')[1].split('</tr>')[0];
 document.getElementById('confusion-body').innerHTML=confHtml.split('</tr>').slice(1,-1).map(r=>'<tr>'+r+'</tr>').join('');
 })();
-['tab-emo','tab-ratings','tab-classes','tab-confusion'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;btn.addEventListener('click',()=>{const tableId=btn.dataset.table;document.querySelectorAll('.table-content').forEach(el=>el.classList.add('hidden'));document.querySelectorAll('.table-toggle').forEach(el=>el.classList.remove('expanded'));document.getElementById(tableId).classList.remove('hidden');btn.classList.add('expanded');});});
-function esc(s){return(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+['tab-emo','tab-ratings','tab-distributions','tab-classes','tab-confusion'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;btn.addEventListener('click',()=>{const tableId=btn.dataset.table;document.querySelectorAll('.table-content').forEach(el=>el.classList.add('hidden'));document.querySelectorAll('.table-toggle').forEach(el=>el.classList.remove('expanded'));document.getElementById(tableId).classList.remove('hidden');btn.classList.add('expanded');});});
 </script>
 </body>
 </html>
