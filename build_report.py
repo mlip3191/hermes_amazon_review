@@ -111,10 +111,11 @@ html = r"""<!DOCTYPE html>
   .card b{font-size:28px;font-weight:650;display:block;line-height:1.1}
   .card b small{font-size:15px;font-weight:500;color:var(--muted)}
   .card span{font-size:12px;color:var(--muted)}
-  .bars{display:flex;gap:6px;align-items:flex-end;height:120px;margin-top:6px}
+  .bars{display:flex;gap:6px;align-items:flex-end;height:120px;margin:6px 0 22px}
   .bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;position:relative;min-height:3px}
   .bar small{position:absolute;top:-18px;left:0;right:0;text-align:center;color:var(--muted);font-size:11px}
-  .bar fig{font-size:9px;color:var(--muted);text-align:center;margin-top:6px}
+  .bar fig{position:absolute;top:100%;left:50%;margin:6px 0 0;transform:translateX(-50%);
+    font-size:9px;color:var(--muted);text-align:center;white-space:nowrap}
   .filterbar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin:0 0 16px}
   .fgroup{display:flex;flex-direction:column;gap:4px}
   .fgroup label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -139,7 +140,6 @@ html = r"""<!DOCTYPE html>
   .emo-bars-wrap>div{flex:1;min-width:260px}
   .emo-bars-wrap h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
   .emo-bars-wrap .bars{height:100px}
-  .emo-bars-wrap .bar fig{font-size:8px}
   .stars{color:var(--accent);letter-spacing:.05em;font-weight:600}
   .review{color:var(--ink);max-width:330px}
   .review small{color:var(--muted)}

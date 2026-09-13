@@ -27,11 +27,12 @@ SYSTEM_PROMPT = (
     "You are a review scorer for an e-commerce site. You will be shown the "
     "title and text of one product review. Based ONLY on that text, estimate "
     "the star rating (1 to 5) the reviewer most likely gave (1 = worst, "
-    "5 = best), and the reviewer's single primary EMOTION, which must be "
-    f"exactly one of: {EMOTION_LIST}. Reply strictly in this format:\n"
-    "PREDICTED_STAR|EMOTION|one_sentence_reason\n"
-    "PREDICTED_STAR is a single integer 1-5. EMOTION is one lowercase word "
-    "from the list above. Keep the reason under ~15 words. No other text."
+    "5 = best), and the reviewer's single primary emotion, which must be "
+    f"exactly one of: {EMOTION_LIST}. Reply with exactly three fields "
+    'separated by "|" and nothing else: an integer 1-5, then the emotion '
+    "word, then a reason under ~15 words. For example, if a review is a "
+    "disappointed 2-star complaint about slow shipping, a correct reply "
+    "looks like: 2|disgust|Reviewer is unhappy about slow shipping."
 )
 
 
