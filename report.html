@@ -96,21 +96,21 @@
     <p class="sub">Star rating (predicted 1&#8211;5) from title + text only, checked against the reviewer's true score.</p>
   </header>
   <div class="rule"></div>
-  <div class="overview-grid">
-    <div>
-      <h3>Headline numbers <span>Star accuracy</span></h3>
-      <div class="cards" id="cards"></div>
-    </div>
-    <div>
-      <h3>Predicted rating <span>Distribution</span></h3>
-      <div class="bars" id="bars"></div>
-    </div>
-    <div>
-      <h3>Primary emotion <span>LLM vs. NRC</span></h3>
-      <div class="cards" id="emo-cards"></div>
-      <div class="emo-bars-wrap" id="emo-bars"></div>
-    </div>
-  </div>
+  <section>
+    <h2>Headline numbers</h2>
+    <div class="cards" id="cards"></div>
+  </section>
+  <div class="rule"></div>
+  <section>
+    <h2>Primary emotion <span>— LLM take vs. NRC lexicon take, compared</span></h2>
+    <div class="cards" id="emo-cards"></div>
+    <div class="emo-bars-wrap" id="emo-bars"></div>
+  </section>
+  <div class="rule"></div>
+  <section>
+    <h2>Predicted rating distribution <span>— how each review was scored</span></h2>
+    <div class="bars" id="bars"></div>
+  </section>
   <div class="rule"></div>
   <section>
     <h2>Primary emotion detail <span>LLM vs. lexicon per review</span></h2>
