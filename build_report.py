@@ -111,7 +111,7 @@ html = r"""<!DOCTYPE html>
   .card b{font-size:28px;font-weight:650;display:block;line-height:1.1}
   .card b small{font-size:15px;font-weight:500;color:var(--muted)}
   .card span{font-size:12px;color:var(--muted)}
-  .bars{display:flex;gap:6px;align-items:flex-end;height:120px;margin:6px 0 22px}
+  .bars{display:flex;gap:6px;align-items:flex-end;height:120px;margin:24px 0 22px}
   .bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;position:relative;min-height:3px}
   .bar small{position:absolute;top:-18px;left:0;right:0;text-align:center;color:var(--muted);font-size:11px}
   .bar fig{position:absolute;top:100%;left:50%;margin:6px 0 0;transform:translateX(-50%);
@@ -140,6 +140,18 @@ html = r"""<!DOCTYPE html>
   .emo-bars-wrap>div{flex:1;min-width:260px}
   .emo-bars-wrap h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
   .emo-bars-wrap .bars{height:100px}
+  .overview-grid{display:flex;gap:32px;flex-wrap:wrap}
+  .overview-grid>div{flex:1;min-width:300px}
+  .overview-grid h3{margin:0 0 10px;font-size:13px;letter-spacing:.04em;color:var(--accent);font-weight:650}
+  .overview-grid h3 span{color:var(--muted);font-weight:400;font-size:11px;margin-left:6px;letter-spacing:0}
+  .overview-grid .cards{grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
+  .overview-grid .card{padding:10px 12px}
+  .overview-grid .card b{font-size:19px}
+  .overview-grid .card span{font-size:10.5px}
+  .overview-grid .bars{height:64px;margin:20px 0 16px}
+  .overview-grid .emo-bars-wrap{gap:14px;margin:10px 0 2px}
+  .overview-grid .emo-bars-wrap>div{min-width:140px}
+  .overview-grid .emo-bars-wrap .bars{height:64px}
   .stars{color:var(--accent);letter-spacing:.05em;font-weight:600}
   .review{color:var(--ink);max-width:330px}
   .review small{color:var(--muted)}
@@ -160,8 +172,39 @@ html = r"""<!DOCTYPE html>
     <p class="sub">Star rating (predicted 1&#8211;5) from title + text only, checked against the reviewer's true score.</p>
   </header>
   <div class="rule"></div>
-  <section><h2>Headline numbers</h2><div class="cards" id="cards"></div></section>
-  <section><h2>Predicted rating distribution <span>— how each review was scored</span></h2><div class="bars" id="bars"></div></section>
+  <div class="overview-grid">
+    <div>
+      <h3>Primary emotion <span>LLM vs. NRC</span></h3>
+      <div class="cards" id="emo-cards"></div>
+      <div class="emo-bars-wrap" id="emo-bars"></div>
+    </div>
+    <div>
+      <h3>Headline numbers <span>Star accuracy</span></h3>
+      <div class="cards" id="cards"></div>
+    </div>
+    <div>
+      <h3>Predicted rating <span>Distribution</span></h3>
+      <div class="bars" id="bars"></div>
+    </div>
+  </div>
+  <div class="rule"></div>
+  <section>
+    <h2>Primary emotion detail <span>LLM vs. lexicon per review</span></h2>
+    <div class="filterbar">
+      <div class="fgroup"><label>Agree</label>
+        <select id="f-emo-agree"><option value="">All</option><option>agree</option><option>differ</option></select></div>
+      <div class="fgroup"><label>LLM emotion</label>
+        <select id="f-emo-llm"><option value="">All</option></select></div>
+      <div class="fgroup"><label>Lexicon emotion</label>
+        <select id="f-emo-lex"><option value="">All</option></select></div>
+      <div class="countnote" id="emo-count"></div>
+      <button class="clear" id="emo-clearf">clear filters</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Review</th><th>LLM emotion</th><th>Lexicon emotion</th><th>Agree</th></tr></thead>
+      <tbody id="emo-rows"></tbody>
+    </table>
+  </section>
   <div class="rule"></div>
   <section>
     <h2>Answer-by-answer · right &amp; wrong</h2>
@@ -178,26 +221,6 @@ html = r"""<!DOCTYPE html>
     <table>
       <thead><tr><th>#</th><th>Review</th><th>Predicted</th><th>Actual</th><th>Result</th><th>Model's reason</th></tr></thead>
       <tbody id="rows"></tbody>
-    </table>
-  </section>
-  <div class="rule"></div>
-  <section>
-    <h2>Primary emotion <span>— LLM take vs. NRC lexicon take, compared</span></h2>
-    <div class="cards" id="emo-cards"></div>
-    <div class="emo-bars-wrap" id="emo-bars"></div>
-    <div class="filterbar">
-      <div class="fgroup"><label>Agree</label>
-        <select id="f-emo-agree"><option value="">All</option><option>agree</option><option>differ</option></select></div>
-      <div class="fgroup"><label>LLM emotion</label>
-        <select id="f-emo-llm"><option value="">All</option></select></div>
-      <div class="fgroup"><label>Lexicon emotion</label>
-        <select id="f-emo-lex"><option value="">All</option></select></div>
-      <div class="countnote" id="emo-count"></div>
-      <button class="clear" id="emo-clearf">clear filters</button>
-    </div>
-    <table>
-      <thead><tr><th>#</th><th>Review</th><th>LLM emotion</th><th>Lexicon emotion</th><th>Agree</th></tr></thead>
-      <tbody id="emo-rows"></tbody>
     </table>
   </section>
   <div class="rule"></div>
