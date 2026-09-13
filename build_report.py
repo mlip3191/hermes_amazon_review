@@ -127,10 +127,10 @@ html = r"""<!DOCTYPE html>
     font-family:var(--font);padding:0;align-self:flex-end;margin-bottom:4px}
   .clear:hover{color:var(--ink)}
   .table-wrapper{display:flex;flex-direction:column;gap:10px}
-  .table-toggle{background:var(--accent-soft);border:1px solid var(--hair);color:var(--accent);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;align-self:flex-start;transition:background 0.2s}
-  .table-toggle:hover{background:var(--accent);color:var(--card)}
-  .table-toggle.collapsed::before{content:"▶ "}
-  .table-toggle.expanded::before{content:"▼ "}
+  .table-toggle{background:var(--hair);border:1px solid var(--hair);color:var(--ink);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s}
+  .table-toggle:hover{background:var(--accent-soft);border-color:var(--accent)}
+  .table-toggle.expanded{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .table-content.hidden{display:none}
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
   table.hidden{display:none}
   th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--hair);vertical-align:top;font-size:13.5px}
@@ -195,55 +195,45 @@ html = r"""<!DOCTYPE html>
   </section>
   <div class="rule"></div>
   <section>
-    <h2>Primary emotion detail <span>LLM vs. lexicon per review</span></h2>
-    <div class="table-wrapper">
-      <button class="table-toggle collapsed" id="emo-toggle">Show emotion table</button>
-      <div id="emo-table-content" class="hidden">
-        <div class="filterbar">
-          <div class="fgroup"><label>Agree</label>
-            <select id="f-emo-agree"><option value="">All</option><option>agree</option><option>differ</option></select></div>
-          <div class="fgroup"><label>LLM emotion</label>
-            <select id="f-emo-llm"><option value="">All</option></select></div>
-          <div class="fgroup"><label>Lexicon emotion</label>
-            <select id="f-emo-lex"><option value="">All</option></select></div>
-          <div class="countnote" id="emo-count"></div>
-          <button class="clear" id="emo-clearf">clear filters</button>
-        </div>
-        <table>
-          <thead><tr><th>#</th><th>Review</th><th>LLM emotion</th><th>Lexicon emotion</th><th>Agree</th></tr></thead>
-          <tbody id="emo-rows"></tbody>
-        </table>
-      </div>
+    <h2>View details</h2>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="table-toggle expanded" id="tab-emo" data-table="emo">Primary emotion</button>
+      <button class="table-toggle collapsed" id="tab-ratings" data-table="ratings">Star ratings</button>
+      <button class="table-toggle collapsed" id="tab-classes" data-table="classes">Failure classes</button>
     </div>
-  </section>
-  <div class="rule"></div>
-  <section>
-    <h2>Answer-by-answer · right &amp; wrong</h2>
-    <div class="table-wrapper">
-      <button class="table-toggle collapsed" id="ratings-toggle">Show star ratings table</button>
-      <div id="ratings-table-content" class="hidden">
-        <div class="filterbar">
-          <div class="fgroup"><label>Result</label>
-            <select id="f-result"><option value="">All</option><option>wrong</option><option>correct</option></select></div>
-          <div class="fgroup"><label>Actual</label>
-            <select id="f-actual"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
-          <div class="fgroup"><label>Predicted</label>
-            <select id="f-pred"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
-          <div class="countnote" id="count"></div>
-          <button class="clear" id="clearf">clear filters</button>
-        </div>
-        <table>
-          <thead><tr><th>#</th><th>Review</th><th>Predicted</th><th>Actual</th><th>Result</th><th>Model's reason</th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
+    <div id="emo" class="table-content">
+      <div class="filterbar">
+        <div class="fgroup"><label>Agree</label>
+          <select id="f-emo-agree"><option value="">All</option><option>agree</option><option>differ</option></select></div>
+        <div class="fgroup"><label>LLM emotion</label>
+          <select id="f-emo-llm"><option value="">All</option></select></div>
+        <div class="fgroup"><label>Lexicon emotion</label>
+          <select id="f-emo-lex"><option value="">All</option></select></div>
+        <div class="countnote" id="emo-count"></div>
+        <button class="clear" id="emo-clearf">clear filters</button>
       </div>
+      <table>
+        <thead><tr><th>#</th><th>Review</th><th>LLM emotion</th><th>Lexicon emotion</th><th>Agree</th></tr></thead>
+        <tbody id="emo-rows"></tbody>
+      </table>
     </div>
-  </section>
-  <div class="rule"></div>
-  <section>
-    <h2>Why it got it wrong <span>— grouped failure classes</span></h2>
-    <button class="table-toggle collapsed" id="classes-toggle">Show failure classes</button>
-    <div id="classes" class="hidden"></div>
+    <div id="ratings" class="table-content hidden">
+      <div class="filterbar">
+        <div class="fgroup"><label>Result</label>
+          <select id="f-result"><option value="">All</option><option>wrong</option><option>correct</option></select></div>
+        <div class="fgroup"><label>Actual</label>
+          <select id="f-actual"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+        <div class="fgroup"><label>Predicted</label>
+          <select id="f-pred"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+        <div class="countnote" id="count"></div>
+        <button class="clear" id="clearf">clear filters</button>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Review</th><th>Predicted</th><th>Actual</th><th>Result</th><th>Model's reason</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="classes" class="table-content hidden"></div>
   </section>
   <footer>
     Scoring used title + text only; the true rating was applied only after scoring and was never written to the model input.
@@ -332,7 +322,7 @@ document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-a
   ['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).addEventListener('change',render));
   document.getElementById('emo-clearf').addEventListener('click',()=>{['f-emo-agree','f-emo-llm','f-emo-lex'].forEach(id=>document.getElementById(id).value='');render();});
 })();
-['emo-toggle','ratings-toggle','classes-toggle'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;const contentId=id.replace('-toggle','')+(id.includes('emo')?'-table-content':id.includes('ratings')?'-table-content':'');const content=document.getElementById(contentId);if(!content)return;const label=btn.textContent.slice(2);btn.addEventListener('click',()=>{content.classList.toggle('hidden');const isExp=!content.classList.contains('hidden');btn.textContent=(isExp?'▼ Hide':'▶ Show ')+label;btn.classList.toggle('collapsed');btn.classList.toggle('expanded');});});
+['tab-emo','tab-ratings','tab-classes'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;btn.addEventListener('click',()=>{const tableId=btn.dataset.table;document.querySelectorAll('.table-content').forEach(el=>el.classList.add('hidden'));document.querySelectorAll('.table-toggle').forEach(el=>el.classList.remove('expanded'));document.getElementById(tableId).classList.remove('hidden');btn.classList.add('expanded');});});
 function esc(s){return(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 </script>
 </body>
