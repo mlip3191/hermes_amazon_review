@@ -298,14 +298,8 @@ document.getElementById('clearf').addEventListener('click',()=>{['f-result','f-a
     ["Rows compared",es.n,"reviews with both an LLM and lexicon emotion"]];
   let h="";for(const[t,v,d]of cards)h+=`<div class="card"><b>${v}</b><span>${t} — ${d}</span></div>`;
   document.getElementById('emo-cards').innerHTML=h;
-
-  function barsHtml(dist,label){
-    const max=Math.max(...EMOTIONS.map(e=>dist[e]||0),1);
-    let b="";for(const e of EMOTIONS){const v=dist[e]||0;b+=`<div class="bar" style="height:${(v/max)*100}%" title="${v} review(s)"><small>${v}</small><fig>${e}</fig></div>`;}
-    return `<div><h4>${label}</h4><div class="bars">${b}</div></div>`;
-  }
   document.getElementById('emo-bars').innerHTML =
-    barsHtml(es.llm_distribution,'LLM emotion') + barsHtml(es.lexicon_distribution,'Lexicon emotion');
+    barsHtml(EMOTIONS,es.llm_distribution,'LLM emotion') + barsHtml(EMOTIONS,es.lexicon_distribution,'Lexicon emotion');
 
   const llmSel=document.getElementById('f-emo-llm'), lexSel=document.getElementById('f-emo-lex');
   for(const e of EMOTIONS){
