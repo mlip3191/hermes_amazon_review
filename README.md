@@ -1,7 +1,7 @@
 # hermes_amazon_review
 
 Agent that predicts Amazon Gift Card review scores (1–5 stars) and primary emotions from title and text.
-![[Pasted image 20260913210003.png]]
+![[Pasted image 20260913210410.png]]
 
 ## Phases
 
