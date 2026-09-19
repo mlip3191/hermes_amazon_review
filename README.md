@@ -5,8 +5,11 @@ Agent that predicts Amazon Gift Card review scores (1–5 stars) and primary emo
 
 ## Phases
 
-### Phase 1: Binary sentiment classification
-`classify_reviews.py` — TF-IDF + Logistic Regression on review text vs. star rating (1–3 → negative, 4–5 → positive).
+### Phase 1: Sentiment classification (three-tier)
+`classify_reviews.py` — TF-IDF + Logistic Regression on review text vs. star rating:
+- 1–2 stars → NEGATIVE
+- 3 stars → NEUTRAL
+- 4–5 stars → POSITIVE
 
 ### Phase 2: Star rating prediction (LLM)
 `classify_reviews_llm.py` — Claude (via OpenAI-compatible endpoint) predicts exact star rating 1–5 from title + text.
@@ -20,6 +23,9 @@ Two independent takes on primary emotion (anger, anticipation, disgust, fear, jo
 - **Lexicon take** — `emotion_lexicon.py` scores using NRC Word-Emotion Association Lexicon (no model calls, no API key needed)
 
 Reports agreement % and confusion matrix; can rescore existing `report_data.json` via standalone `emotion_lexicon.py` CLI.
+
+### Phase 5: Three-tier sentiment classification
+`sentiment.py` — Utility module for sentiment mapping. `generate_report_data.py` now includes `true_sentiment` and `pred_sentiment` for each review. Report adds sentiment accuracy, distribution, and confusion matrix alongside star ratings.
 
 ## Running
 
@@ -38,9 +44,15 @@ Requires `.venv` with `openai`, `numpy`, `pandas`, `scikit-learn` installed; API
 - Detailed tables with filters (by emotion, result, actual/predicted stars)
 - Failure mode classification for wrong predictions
 
-`report_data.json` — raw predictions: `{stats, emotion_stats, rows}`
+`report_data.json` — raw predictions: `{stats, emotion_stats, rating_stats, sentiment_stats, rows}`
 
 ## Recent Changes
+
+### v0.5.0 — Phase 5: Three-Tier Sentiment Classification
+- **Sentiment utility module** — `sentiment.py` with star-to-sentiment conversion functions
+- **Multi-class classifier** — `classify_reviews.py` now uses 3-class Logistic Regression instead of binary
+- **Sentiment in reports** — `generate_report_data.py` adds `true_sentiment` and `pred_sentiment` to rows
+- **Sentiment metrics** — Report now includes sentiment accuracy, distribution, and confusion matrix alongside star ratings
 
 ### v0.4.1 — UI/UX Polish & Bug Fixes
 - **Dynamic tabbed tables** (a14a5c2) — Single "View details" section with tabs to switch between emotion, star ratings, and failure classes tables (instead of three separate sections)
