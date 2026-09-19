@@ -27,14 +27,29 @@ Reports agreement % and confusion matrix; can rescore existing `report_data.json
 ### Phase 5: Three-tier sentiment classification
 `sentiment.py` — Utility module for sentiment mapping. `generate_report_data.py` now includes `true_sentiment` and `pred_sentiment` for each review. Report adds sentiment accuracy, distribution, and confusion matrix alongside star ratings.
 
+### Phase 6: Larger sample with random sampling
+`data_loader.py` — Utility module for loading all reviews and performing random sampling with a fixed seed for reproducibility. Default sample size increased to 250 reviews (from 24). Random seed defaults to 42 but can be overridden for different samples.
+
 ## Running
 
 Requires `.venv` with `openai`, `numpy`, `pandas`, `scikit-learn` installed; API key in `.env` (ANTHROPIC_API_KEY or OPENAI_API_KEY).
 
 ```bash
-./.venv/bin/python generate_report_data.py [sample_size]  # default 24; phase 4: generates stars + emotions
-./.venv/bin/python build_report.py                         # builds self-contained report.html
-./.venv/bin/python emotion_lexicon.py report_data.json    # rescores existing data with lexicon (no API needed)
+./.venv/bin/python generate_report_data.py [sample_size] [seed]  # default 250 random reviews (seed 42)
+./.venv/bin/python build_report.py                                # builds self-contained report.html
+./.venv/bin/python emotion_lexicon.py report_data.json           # rescores existing data with lexicon (no API needed)
+```
+
+Examples:
+```bash
+# Generate report with default 250 random reviews (seed 42)
+./.venv/bin/python generate_report_data.py
+
+# Generate report with 100 random reviews (seed 42)
+./.venv/bin/python generate_report_data.py 100
+
+# Generate report with 250 random reviews (different seed for different sample)
+./.venv/bin/python generate_report_data.py 250 99
 ```
 
 ## Output
@@ -47,6 +62,12 @@ Requires `.venv` with `openai`, `numpy`, `pandas`, `scikit-learn` installed; API
 `report_data.json` — raw predictions: `{stats, emotion_stats, rating_stats, sentiment_stats, rows}`
 
 ## Recent Changes
+
+### v0.6.0 — Phase 6: Larger Sample with Random Sampling
+- **Data loader module** — `data_loader.py` with functions to load all reviews and perform random sampling
+- **Random sampling** — `load_random_sample()` uses configurable seed for reproducible, non-sequential sampling
+- **Larger default sample** — Default sample size increased from 24 to 250 reviews
+- **Seed parameter** — Command-line argument to control random seed (default 42) for generating different samples
 
 ### v0.5.0 — Phase 5: Three-Tier Sentiment Classification
 - **Sentiment utility module** — `sentiment.py` with star-to-sentiment conversion functions

@@ -16,7 +16,8 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from classify_reviews_llm import DEFAULT_BASE, load_dotenv, load_reviews
+from classify_reviews_llm import DEFAULT_BASE, load_dotenv
+from data_loader import load_random_sample
 from emotion_lexicon import EMOTIONS, get_lexicon, score_text
 from sentiment import star_to_sentiment
 
@@ -69,7 +70,8 @@ def score_with_emotion(client, model, text, retries=3):
 
 
 def main():
-    sample = int(sys.argv[1]) if len(sys.argv) > 1 else 24
+    sample = int(sys.argv[1]) if len(sys.argv) > 1 else 250
+    seed = int(sys.argv[2]) if len(sys.argv) > 2 else 42
     model = os.environ.get("SCORE_MODEL", DEFAULT_MODEL)
     load_dotenv(Path(__file__).resolve().parent / ".env")
     api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY")
@@ -77,11 +79,8 @@ def main():
         sys.exit("no API key")
     client = OpenAI(api_key=api_key, base_url=DEFAULT_BASE)
 
-    reviews = []
-    for text, rating in load_reviews("Gift_Cards.jsonl"):
-        reviews.append((text, rating))
-        if len(reviews) >= sample:
-            break
+    reviews = load_random_sample("Gift_Cards.jsonl", sample, seed=seed)
+    print(f"Loaded {len(reviews):,} random reviews (seed={seed})\n")
 
     lexicon = get_lexicon()
 
