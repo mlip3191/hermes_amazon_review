@@ -18,6 +18,7 @@ from openai import OpenAI
 
 from classify_reviews_llm import DEFAULT_BASE, load_dotenv, load_reviews
 from emotion_lexicon import EMOTIONS, get_lexicon, score_text
+from sentiment import star_to_sentiment
 
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 OUT = "report_data.json"
@@ -92,6 +93,7 @@ def main():
         if pred is None:
             rows.append({
                 "text": text, "true": true, "pred": None, "reason": "", "correct": None,
+                "true_sentiment": star_to_sentiment(true), "pred_sentiment": None,
                 "llm_emotion": llm_emotion, "lexicon_emotion": lexicon_emotion, "emotion_agree": None,
             })
             continue
@@ -103,6 +105,7 @@ def main():
         rows.append({
             "text": text, "title": text.split(".",1)[0][:60], "true": int(true),
             "pred": pred, "reason": reason, "correct": pred == true, "diff": diff,
+            "true_sentiment": star_to_sentiment(true), "pred_sentiment": star_to_sentiment(pred),
             "llm_emotion": llm_emotion, "lexicon_emotion": lexicon_emotion, "emotion_agree": emotion_agree,
         })
         print(f"[{i}/{len(reviews)}] pred={pred} true={true} ok={pred==true} "
@@ -149,7 +152,33 @@ def main():
         "confusion": confusion_stars, "per_class": per_class,
     }
 
-    json.dump({"stats": stats, "emotion_stats": emotion_stats, "rating_stats": rating_stats, "rows": rows}, open(OUT, "w"), indent=2)
+    # Three-tier sentiment stats
+    sentiment_labels = ["negative", "neutral", "positive"]
+    valid_sentiment = [r for r in rows if r.get("pred_sentiment") is not None]
+    sentiment_correct = sum(1 for r in valid_sentiment if r["true_sentiment"] == r["pred_sentiment"])
+    sentiment_true_dist = {s: sum(1 for r in valid_sentiment if r["true_sentiment"] == s) for s in sentiment_labels}
+    sentiment_pred_dist = {s: sum(1 for r in valid_sentiment if r["pred_sentiment"] == s) for s in sentiment_labels}
+    sentiment_confusion = {
+        t: {p: sum(1 for r in valid_sentiment if r["true_sentiment"] == t and r["pred_sentiment"] == p)
+            for p in sentiment_labels}
+        for t in sentiment_labels
+    }
+    sentiment_per_class = {
+        s: {
+            "n": sentiment_true_dist[s],
+            "correct": sentiment_confusion[s][s],
+            "pct_correct": round(100 * sentiment_confusion[s][s] / sentiment_true_dist[s], 1) if sentiment_true_dist[s] else 0,
+        }
+        for s in sentiment_labels
+    }
+    sentiment_stats = {
+        "n": len(valid_sentiment), "correct": sentiment_correct,
+        "pct_correct": round(100 * sentiment_correct / len(valid_sentiment), 1) if valid_sentiment else 0,
+        "true_distribution": sentiment_true_dist, "pred_distribution": sentiment_pred_dist,
+        "confusion": sentiment_confusion, "per_class": sentiment_per_class,
+    }
+
+    json.dump({"stats": stats, "emotion_stats": emotion_stats, "rating_stats": rating_stats, "sentiment_stats": sentiment_stats, "rows": rows}, open(OUT, "w"), indent=2)
     print(f"\nWrote {OUT}: {json.dumps(stats)}  ({time.time()-t0:.0f}s)")
     print(f"Emotion agreement: {emotion_stats['pct_agree']}% ({agree}/{len(valid)})")
 

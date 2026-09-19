@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Binary sentiment classification of Amazon Gift Card reviews.
+Three-tier sentiment classification of Amazon Gift Card reviews.
 
 Labels are derived ONLY from the star rating:
-    rating 1, 2, 3  -> NEGATIVE (0)
-    rating 4, 5     -> POSITIVE (1)
+    rating 1, 2     -> NEGATIVE (0)
+    rating 3        -> NEUTRAL (1)
+    rating 4, 5     -> POSITIVE (2)
 
 Features are built ONLY from the review title + text (the rating is NOT
 used as an input feature). A TF-IDF + Logistic Regression pipeline is
@@ -32,6 +33,8 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
+from sentiment import idx_to_sentiment, star_to_sentiment_idx
+
 DEFAULT_DATA = "Gift_Cards.jsonl"
 
 
@@ -52,7 +55,7 @@ def load_reviews(path: str):
             content = f"{title}. {text}".strip()
             if not content:
                 continue
-            label = 0 if rating <= 3 else 1  # 1-3 negative, 4-5 positive
+            label = star_to_sentiment_idx(rating)
             yield content, label
 
 
@@ -75,14 +78,16 @@ def main():
     labels = np.asarray(labels)
 
     print(f"Loaded {len(contents):,} reviews ({time.time()-t0:.1f}s)")
-    neg, pos = int((labels == 0).sum()), int((labels == 1).sum())
-    print(f"Class distribution:  negative (1-3) = {neg:,}  |  positive (4-5) = {pos:,}")
+    neg = int((labels == 0).sum())
+    neu = int((labels == 1).sum())
+    pos = int((labels == 2).sum())
+    print(f"Class distribution:  negative (1-2) = {neg:,}  |  neutral (3) = {neu:,}  |  positive (4-5) = {pos:,}")
 
     def mask_sum(a, m):
         return f"{int(a[m].sum()):,}"
 
-    m0, m1 = labels == 0, labels == 1
-    print(f"  negative: {mask_sum(np.ones_like(labels), m0)}  |  positive: {mask_sum(np.ones_like(labels), m1)}")
+    m0, m1, m2 = labels == 0, labels == 1, labels == 2
+    print(f"  negative: {mask_sum(np.ones_like(labels), m0)}  |  neutral: {mask_sum(np.ones_like(labels), m1)}  |  positive: {mask_sum(np.ones_like(labels), m2)}")
 
     X_train, X_test, y_train, y_test = train_test_split(
         contents, labels, test_size=args.test_size, stratify=labels, random_state=42
@@ -114,22 +119,19 @@ def main():
     print(f"F1-score : {f1_score(y_test, y_pred):.4f}")
     print("\nConfusion matrix [[TN FP], [FN TP]]:")
     print(confusion_matrix(y_test, y_pred))
-    print("\n" + classification_report(y_test, y_pred, target_names=["negative", "positive"]))
+    print("\n" + classification_report(y_test, y_pred, target_names=["negative", "neutral", "positive"]))
 
     # Most informative features per class
     tfidf = pipeline.named_steps["tfidf"]
     clf = pipeline.named_steps["clf"]
-    if len(clf.coef_.shape) == 2:  # both classes present in training
+    if len(clf.coef_.shape) == 2 and clf.coef_.shape[0] >= 3:  # 3+ classes
         feature_names = np.asarray(tfidf.get_feature_names_out())
-        coef = clf.coef_[0]
-        top_pos = np.argsort(coef)[-10:][::-1]
-        top_neg = np.argsort(coef)[:10]
-        print("\nTop 10 features for POSITIVE class:")
-        for i in top_pos:
-            print(f"  {feature_names[i]:>22}  {coef[i]:+.4f}")
-        print("\nTop 10 features for NEGATIVE class:")
-        for i in top_neg:
-            print(f"  {feature_names[i]:>22}  {coef[i]:+.4f}")
+        for class_idx, class_name in enumerate(["NEGATIVE", "NEUTRAL", "POSITIVE"]):
+            coef = clf.coef_[class_idx]
+            top_idx = np.argsort(np.abs(coef))[-10:][::-1]
+            print(f"\nTop 10 features for {class_name} class:")
+            for i in top_idx:
+                print(f"  {feature_names[i]:>22}  {coef[i]:+.4f}")
 
     # A few example predictions
     print("\n===== EXAMPLE PREDICTIONS (TEST SET) =====")
@@ -138,8 +140,8 @@ def main():
         if shown >= 5:
             break
         y_hat = pipeline.predict([x])[0]
-        pred = "positive" if y_hat == 1 else "negative"
-        truth = "positive" if y_true == 1 else "negative"
+        pred = idx_to_sentiment(y_hat)
+        truth = idx_to_sentiment(y_true)
         status = "OK " if y_hat == y_true else "ERR"
         print(f"[{status}] pred={pred:>8} true={truth:>8} | {x[:90]}...")
         shown += 1

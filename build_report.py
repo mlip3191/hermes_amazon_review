@@ -7,7 +7,9 @@ rows = D["rows"]
 stats = D["stats"]
 emotion_stats = D.get("emotion_stats")
 rating_stats = D.get("rating_stats")
+sentiment_stats = D.get("sentiment_stats")
 EMOTIONS = ["anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust"]
+SENTIMENTS = ["negative", "neutral", "positive"]
 
 # Words/markers that signal a complaint or reservation in the review.
 COMPLAINT = ["mistake", "deduction", "complaint", "note", "without the fees",
@@ -79,6 +81,7 @@ payload = {
     "distribution": [{"star": k, "count": v} for k, v in sorted(dist.items())],
     "emotion_stats": emotion_stats,
     "rating_stats": rating_stats,
+    "sentiment_stats": sentiment_stats,
 }
 
 # ---- HTML (same theme; only the classification source changed) ----
